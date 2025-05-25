@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:15
+    container_name: carpark-db
+    environment:
+      POSTGRES_USER: caruser
+      POSTGRES_PASSWORD: carpass
+      POSTGRES_DB: cardb
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U caruser -d cardb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+      - pgdata:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0.1
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: start-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/carpark-realm.json:/opt/keycloak/data/import/carpark-realm.json
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: carpark-backend
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    container_name: carpark-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+     - backend
+
+volumes: 
+  pgdata:
