@@ -1,29 +1,55 @@
 {
   "realm": "carpark",
   "enabled": true,
+  "accessTokenLifespan": 3600,
+  "sslRequired": "none",
   "clients": [
     {
       "clientId": "carpark-client",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
       "secret": "client-secret",
-      "redirectUris": ["http://localhost:4200/*"],
+      "redirectUris": [
+        "http://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200"
+      ],
       "publicClient": false,
-      "protocol": "openid-connect"
+      "protocol": "openid-connect",
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false
     }
   ],
   "users": [
     {
       "username": "testuser",
       "enabled": true,
-      "credentials": [{ "type": "password", "value": "testpass" }],
-      "realmRoles": ["user"]
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "user"
+      ]
     }
   ],
   "roles": {
-    "realm": {
-      "user": {},
-      "admin": {}
-    }
+    "realm": [
+      {
+        "name": "user",
+        "description": "User role"
+      },
+      {
+        "name": "admin",
+        "description": "Admin role"
+      }
+    ]
   }
 }

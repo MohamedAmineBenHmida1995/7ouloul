@@ -17,8 +17,9 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./db/seed.sql:/docker-entrypoint-initdb.d/seed.sql
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - carpark-network
 
   keycloak:
     image: quay.io/keycloak/keycloak:22.0.1
@@ -26,7 +27,11 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-    command: start-dev
+      KC_HOSTNAME: keycloak
+      KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+    command: start-dev --import-realm
     ports:
       - "8080:8080"
     volumes:
@@ -34,6 +39,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    networks:
+      - carpark-network
 
   backend:
     build:
@@ -42,12 +49,16 @@ services:
     container_name: carpark-backend
     ports:
       - "8081:8081"
-
+    environment:
+      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://db:5432/cardb
+      - QUARKUS_OIDC_AUTH_SERVER_URL=http://keycloak:8080/realms/carpark
     depends_on:
       db:
         condition: service_healthy
       keycloak:
         condition: service_started
+    networks:
+      - carpark-network
 
   frontend:
     build: ./frontend
@@ -55,7 +66,13 @@ services:
     ports:
       - "4200:80"
     depends_on:
-     - backend
+      - backend
+    networks:
+      - carpark-network
 
-volumes: 
+volumes:
   pgdata:
+
+networks:
+  carpark-network:
+    driver: bridge
